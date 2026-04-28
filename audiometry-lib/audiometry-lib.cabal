@@ -1,0 +1,42 @@
+cabal-version:      3.0
+name:               audiometry-lib
+version:            0.1.0.0
+synopsis:           Functional audiometry computation library (YMH 334)
+license:            MIT
+author:             Mehmet Arda Hakbilen
+maintainer:         mehmetardahakbilen2005@gmail.com
+build-type:         Simple
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:
+        Audiometry.Types
+        Audiometry.Algorithm
+        Audiometry.Error
+        Audiometry.Response
+    build-depends:    base >=4.17 && <5
+    hs-source-dirs:   src
+    default-language: Haskell2010
+
+executable audiometry-bridge
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    base >=4.17 && <5, audiometry-lib
+    hs-source-dirs:   app
+    default-language: Haskell2010
+
+test-suite audiometry-tests
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    main-is:          Spec.hs
+    other-modules:    AlgorithmSpec, PropertySpec
+    build-depends:
+        base       >=4.17 && <5,
+        audiometry-lib,
+        hspec      >=2.11,
+        QuickCheck >=2.14
+    hs-source-dirs:   test
+    default-language: Haskell2010

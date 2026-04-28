@@ -1,0 +1,15 @@
+# Haskell / Cabal
+dist/
+dist-*
+dist-newstyle/
+cabal.project.local
+cabal.project.local~
+.ghc.environment.*
+.hie/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
