@@ -10,23 +10,22 @@ Bu klasör, `audiometry-bridge` (Haskell) executable’ını Java’dan çağır
 Binary yolunu bulmak için:
 
 ```bash
-cd ..
+cd audiometry-lib
 cabal build audiometry-bridge
-cabal list-bin exe:audiometry-bridge
+BRIDGE_PATH="$(cabal list-bin exe:audiometry-bridge)"
+echo "$BRIDGE_PATH"
 ```
 
 ### Derleme
 
 ```bash
-cd java-bridge
+cd ../java-bridge
 mkdir -p out
-javac -d out $(find src -name "*.java")
+javac -d out src/*.java
 ```
 
 ### Çalıştırma (demo)
 
 ```bash
-BRIDGE_PATH="/abs/path/to/audiometry-bridge"
-java -cp out edu.ankara.audiometry.Main "$BRIDGE_PATH"
+java -cp out Main "$BRIDGE_PATH"
 ```
-

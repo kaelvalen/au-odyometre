@@ -76,59 +76,39 @@ Bu doküman, odyometri projesindeki Yazılım/Haskell ekibinin (YMH) teslimatlar
 
 ### Java implementasyon örneği (Process spawn + JSON gönder/al)
 
-Bu örnek, `audiometry-bridge` executable’ını çalıştırıp **tek request JSON** gönderir ve **tek response JSON** okur.
+Bu repo içinde çalışan örnek, `java-bridge/` klasöründe **harici dependency olmadan (JDK-only)** mevcuttur.
 
-Bağımlılık:
+Kısa demo (CLI):
 
-- Jackson Databind (ör. Maven: `com.fasterxml.jackson.core:jackson-databind`)
+```bash
+cd audiometry-lib
+cabal build audiometry-bridge
+BRIDGE_PATH="$(cabal list-bin exe:audiometry-bridge)"
 
-Kod:
+cd ../java-bridge
+mkdir -p out
+javac -d out src/*.java
+java -cp out Main "$BRIDGE_PATH"
+```
+
+Koddan kullanım (özet):
 
 ```java
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.nio.file.Path;
 
-public class AudiometryBridgeClient {
-  private static final ObjectMapper M = new ObjectMapper();
+public class Example {
+  public static void main(String[] args) throws Exception {
+    var client = new AudiometryBridgeClient();
 
-  public static Map<String, Object> applyResponse(
-      String bridgePath,
-      int frequency,
-      int intensity,
-      String ear,        // "left" | "right"
-      String response    // "HEARD" | "NOT_HEARD"
-  ) throws Exception {
-
-    Process p = new ProcessBuilder(bridgePath)
-        .redirectErrorStream(true)
-        .start();
-
-    var req = Map.of(
-        "action", "applyResponse",
-        "frequency", frequency,
-        "intensity", intensity,
-        "ear", ear,
-        "response", response
+    var req = new AudiometryBridgeClient.Request(
+        1000,
+        40,
+        AudiometryBridgeClient.Ear.RIGHT,
+        AudiometryBridgeClient.Response.HEARD
     );
 
-    try (Writer w = new OutputStreamWriter(p.getOutputStream(), StandardCharsets.UTF_8)) {
-      M.writeValue(w, req);
-      w.flush();
-    }
-
-    String out;
-    try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
-      out = r.readLine(); // Haskell tek satır JSON basıyor
-    }
-
-    int code = p.waitFor();
-    if (code != 0) throw new RuntimeException("bridge exit=" + code + " out=" + out);
-
-    @SuppressWarnings("unchecked")
-    Map<String, Object> respObj = M.readValue(out, Map.class);
-    return respObj;
+    var resp = client.applyResponse(Path.of(System.getenv("BRIDGE_PATH")), req);
+    System.out.println(resp.rawJson());
   }
 }
 ```

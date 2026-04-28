@@ -1,5 +1,3 @@
-package edu.ankara.audiometry;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -36,14 +34,12 @@ public final class AudiometryBridgeClient {
     Objects.requireNonNull(bridgePath, "bridgePath");
     Objects.requireNonNull(req, "req");
 
-    String requestJson = toRequestJson(req);
-
     Process p = new ProcessBuilder(bridgePath.toString())
         .redirectErrorStream(true)
         .start();
 
     try (Writer w = new OutputStreamWriter(p.getOutputStream(), StandardCharsets.UTF_8)) {
-      w.write(requestJson);
+      w.write(toRequestJson(req));
       w.flush();
     }
 
@@ -78,9 +74,6 @@ public final class AudiometryBridgeClient {
     List<Threshold> thresholds = extractThresholds(json);
     return new BridgeResponse(nextIntensity, reached, thresholds, error, json);
   }
-
-  // ---- Minimal JSON helpers (known-shape, no deps) ----
-  // Not a general-purpose JSON parser. It’s intentionally tiny for this project’s contract.
 
   private static Integer extractInt(String json, String key) {
     String raw = extractNumberRaw(json, key);
@@ -133,7 +126,6 @@ public final class AudiometryBridgeClient {
     String arr = json.substring(start, end).trim();
     if (arr.isEmpty()) return List.of();
 
-    // Split objects by "},{" (works for this fixed object shape).
     String[] parts = arr.split("\\},\\{");
     List<Threshold> out = new ArrayList<>();
     for (String p : parts) {

@@ -1,11 +1,9 @@
-package edu.ankara.audiometry;
-
 import java.nio.file.Path;
 
 public final class Main {
   public static void main(String[] args) throws Exception {
     if (args.length != 1) {
-      System.err.println("Usage: java ... edu.ankara.audiometry.Main /abs/path/to/audiometry-bridge");
+      System.err.println("Usage: java -cp out Main /abs/path/to/audiometry-bridge");
       System.exit(2);
     }
 
