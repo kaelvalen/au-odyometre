@@ -37,15 +37,19 @@ spec = do
             let Just s0 = initSession 1000 40 RightEar
             in length (sessionSteps (applyResponse step s0)) == 1
     describe "validateIntensity" $ do
-        it "gecerli aralik" $ property $ \db ->
-            (db >= minIntensity && db <= maxIntensity) ==> validateIntensity db /= Nothing
-        it "gecersiz aralik" $ property $ \db ->
-            (db < minIntensity || db > maxIntensity) ==> validateIntensity db == Nothing
+        it "gecerli aralik" $ property $
+            forAll (choose (minIntensity, maxIntensity)) $ \db ->
+                validateIntensity db /= Nothing
+        it "gecersiz aralik" $ property $
+            forAll genInvalidIntensity $ \db ->
+                validateIntensity db == Nothing
     describe "validateFrequency" $ do
-        it "standart gecerli" $ property $ \f ->
-            f `elem` [250,500,1000,2000,4000,8000::Int] ==> validateFrequency f /= Nothing
-        it "standart olmayan gecersiz" $ property $ \f ->
-            f `notElem` [250,500,1000,2000,4000,8000::Int] ==> validateFrequency f == Nothing
+        it "standart gecerli" $ property $
+            forAll (elements standardFrequencies) $ \f ->
+                validateFrequency f /= Nothing
+        it "standart olmayan gecersiz" $ property $
+            forAll genNonStandardFrequency $ \f ->
+                validateFrequency f == Nothing
     describe "validResponses" $
         it "uzunluk <= giris" $ property $ \(msgs :: [Maybe Response]) ->
             length (validResponses msgs) <= length msgs
@@ -55,3 +59,22 @@ spec = do
             in length (sessionSteps (foldSession s0 (steps :: [TestStep]))) == length steps
         it "bos degismez" $
             let Just s0 = initSession 1000 40 RightEar in foldSession s0 [] == s0
+
+genInvalidIntensity :: Gen Int
+genInvalidIntensity =
+    oneof
+        [ choose (minBound, minIntensity - 1)
+        , choose (maxIntensity + 1, maxBound)
+        ]
+
+genNonStandardFrequency :: Gen Int
+genNonStandardFrequency =
+    oneof
+        [ choose (minBound, 249)
+        , choose (251, 499)
+        , choose (501, 999)
+        , choose (1001, 1999)
+        , choose (2001, 3999)
+        , choose (4001, 7999)
+        , choose (8001, maxBound)
+        ]
