@@ -43,6 +43,8 @@ parseResponse _           = Nothing
 
 parseRequest :: String -> Maybe (Int, Int, Ear, Response)
 parseRequest s = do
+  action <- extractStr "action" s
+  if action /= "applyResponse" then Nothing else Just ()
   freq <- extractInt "frequency" s
   db   <- extractInt "intensity" s
   earS <- extractStr "ear"       s
@@ -53,8 +55,10 @@ parseRequest s = do
 
 encodeThreshold :: Threshold -> String
 encodeThreshold t =
-  "{\"frequency\":" ++ show (unFrequency (threshFrequency t)) ++
-  ",\"intensity\":" ++ show (unIntensity  (threshIntensity t)) ++
+  let Frequency f = threshFrequency t
+      Intensity i = threshIntensity t
+  in "{\"frequency\":" ++ show f ++
+     ",\"intensity\":" ++ show i ++
   ",\"ear\":\""     ++ (case threshEar t of RightEar -> "right"; LeftEar -> "left") ++ "\"}"
 
 encodeResult :: Intensity -> Bool -> [Threshold] -> String
@@ -71,15 +75,25 @@ main = do
   let output = case parseRequest input of
         Nothing -> "{\"error\":\"invalid_json\"}"
         Just (freqHz, db, ear, resp) ->
-          case initSession freqHz db ear of
-            Left (IntensityOutOfRange _) -> "{\"error\":\"intensity_out_of_range\"}"
-            Left (InvalidFrequency _)    -> "{\"error\":\"invalid_frequency\"}"
-            Right session ->
-              let step    = TestStep (sessionFrequency session)
-                                     (sessionCurrentdB  session)
-                                     (sessionEar        session)
-                                     resp
-                  updated = applyResponse step session
-                  reached = not . null $ sessionThresholds updated
+          case (validateFrequency freqHz, validateIntensity db) of
+            (Nothing, _) -> "{\"error\":\"invalid_frequency\"}"
+            (_, Nothing) -> "{\"error\":\"intensity_out_of_range\"}"
+            (Just freq, Just intensity) ->
+              let session0 =
+                    TestSession
+                      { sessionEar = ear
+                      , sessionFrequency = freq
+                      , sessionCurrentdB = intensity
+                      , sessionSteps = []
+                      , sessionThresholds = []
+                      }
+                  step =
+                    TestStep
+                      (sessionFrequency session0)
+                      (sessionCurrentdB  session0)
+                      (sessionEar        session0)
+                      resp
+                  updated  = applyResponse step session0
+                  reached  = length (sessionThresholds updated) > length (sessionThresholds session0)
               in encodeResult (sessionCurrentdB updated) reached (sessionThresholds updated)
   putStrLn output

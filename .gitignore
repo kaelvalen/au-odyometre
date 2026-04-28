@@ -13,3 +13,8 @@ cabal.project.local~
 *.swp
 *~
 .DS_Store
+
+# Java Bridge
+*.class
+java-bridge/out/
+out/
